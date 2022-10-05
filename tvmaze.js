@@ -3,7 +3,7 @@
 const $showsList = $("#showsList");
 const $episodesArea = $("#episodesArea");
 const $searchForm = $("#searchForm");
-
+const MOVIE_URL = "http://api.tvmaze.com/search/shows/";
 
 /** Given a search term, search for tv shows that match that query.
  *
@@ -11,28 +11,47 @@ const $searchForm = $("#searchForm");
  *    Each show object should contain exactly: {id, name, summary, image}
  *    (if no image URL given by API, put in a default image URL)
  */
-
-async function getShowsByTerm( /* term */) {
+//let request;
+async function getShowsByTerm(showTerm) {
   // ADD: Remove placeholder & make request to TVMaze search shows API.
 
-  return [
-    {
-      id: 1767,
-      name: "The Bletchley Circle",
-      summary:
-        `<p><b>The Bletchley Circle</b> follows the journey of four ordinary 
-           women with extraordinary skills that helped to end World War II.</p>
-         <p>Set in 1952, Susan, Millie, Lucy and Jean have returned to their 
-           normal lives, modestly setting aside the part they played in 
-           producing crucial intelligence, which helped the Allies to victory 
-           and shortened the war. When Susan discovers a hidden code behind an
-           unsolved murder she is met by skepticism from the police. She 
-           quickly realises she can only begin to crack the murders and bring
-           the culprit to justice with her former friends.</p>`,
-      image:
-          "http://static.tvmaze.com/uploads/images/medium_portrait/147/369403.jpg"
+  // return [
+  //   {
+  //     id: 1767,
+  //     name: "The Bletchley Circle",
+  //     summary:
+  //       `<p><b>The Bletchley Circle</b> follows the journey of four ordinary 
+  //          women with extraordinary skills that helped to end World War II.</p>
+  //        <p>Set in 1952, Susan, Millie, Lucy and Jean have returned to their 
+  //          normal lives, modestly setting aside the part they played in 
+  //          producing crucial intelligence, which helped the Allies to victory 
+  //          and shortened the war. When Susan discovers a hidden code behind an
+  //          unsolved murder she is met by skepticism from the police. She 
+  //          quickly realises she can only begin to crack the murders and bring
+  //          the culprit to justice with her former friends.</p>`,
+  //     image:
+  //         "http://static.tvmaze.com/uploads/images/medium_portrait/147/369403.jpg"
+  //   }
+  // ]
+
+  let request = await axios.get(MOVIE_URL,{params: {"q" : showTerm}});
+  console.log("request is ", request);
+  let requestShowArray = request.data;
+  let showsResult = [];
+
+  for(let show of requestShowArray){
+    let {id, name, summary, image} = show.show;
+    //console.log(image);
+    if(image === null){
+      //console.log("image is null");
+      image = {original : "https://tinyurl.com/tv-missing"};
     }
-  ]
+    const {original} = image;
+
+    showsResult.push({id, name, summary, original});
+  }
+  console.log(showsResult, "showResult")
+  return showsResult;
 }
 
 
@@ -46,8 +65,8 @@ function populateShows(shows) {
         `<div data-show-id="${show.id}" class="Show col-md-12 col-lg-6 mb-4">
          <div class="media">
            <img 
-              src="http://static.tvmaze.com/uploads/images/medium_portrait/160/401704.jpg" 
-              alt="Bletchly Circle San Francisco" 
+              src="${show.original}"; 
+              alt=${show.name};
               class="w-25 me-3">
            <div class="media-body">
              <h5 class="text-primary">${show.name}</h5>
@@ -60,7 +79,16 @@ function populateShows(shows) {
        </div>
       `);
 
-    $showsList.append($show);  }
+    $showsList.append($show);  
+  }
+
+    //  <img 
+    //     src="http://static.tvmaze.com/uploads/images/medium_portrait/160/401704.jpg" 
+    //     alt="Bletchly Circle San Francisco" 
+    //     class="w-25 me-3">
+    //  <div class="media-body">
+    //    <h5 class="text-primary">${show.name}</h5>
+    //    <div><small>${show.summary}</small></div>
 }
 
 
@@ -91,3 +119,6 @@ $searchForm.on("submit", async function (evt) {
 /** Write a clear docstring for this function... */
 
 // function populateEpisodes(episodes) { }
+
+
+
