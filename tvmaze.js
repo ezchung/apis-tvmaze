@@ -16,27 +16,27 @@ const MISSING_IMG_PLACEHOLDER = "https://tinyurl.com/tv-missing";
 
 async function getShowsByTerm(showTerm) {
   // ADD: Remove placeholder & make request to TVMaze search shows API.
-  let request = await axios.get(MOVIE_URL,{params: {"q" : showTerm}});
+  let request = await axios.get(MOVIE_URL, { params: { q: showTerm } });
   console.log("request is ", request);
   let requestShowArray = request.data;
   return requestShowArray.map(getShowData);
 }
 
-  /**
+/**
    *Takes input of an array of objects and extracts important properties from
    objects and returns an array of objects with important properties
    Input: show - Array of objects
    Return: Array of objects
    */
 function getShowData(show) {
-  let {id, name, summary, image: showImg} = show.show;
+  let { id, name, summary, image: showImg } = show.show;
 
-  if(showImg === null){
+  if (showImg === null) {
     //console.log("image is null");
-    showImg = {original : MISSING_IMG_PLACEHOLDER};
+    showImg = { original: MISSING_IMG_PLACEHOLDER };
   }
-  const {original:image} = showImg;
-  return {id, name, summary, image};
+  const { original: image } = showImg;
+  return { id, name, summary, image };
 }
 
 /** Given list of shows, create markup for each and to DOM */
@@ -46,7 +46,7 @@ function populateShows(shows) {
 
   for (let show of shows) {
     const $show = $(
-        `<div data-show-id="${show.id}" class="Show col-md-12 col-lg-6 mb-4">
+      `<div data-show-id="${show.id}" class="Show col-md-12 col-lg-6 mb-4">
           <div class="media">
             <img
                 src="${show.image}"
@@ -61,7 +61,7 @@ function populateShows(shows) {
             </div>
           </div>
        </div>`
-      );
+    );
 
     $showsList.append($show);
   }
@@ -80,26 +80,33 @@ async function searchForShowAndDisplay() {
 }
 
 /** Listen for submit action and invoke searchForShowAndDisplay function */
+//awaiting the calling of the the searchForShowAndDisplay function
+//Do stuff with the data and can do stuff with response. Without await, reponse would be
+//the promise. Response is the real data. Function getShowsByTerm returns a promise of the
+//actual answer and to call the data with the await.
+
+//Put at the top
+//console.log("getShowsByTerm", term)
+//answers question of what was passed in and if the function is actually run
+//reinforcement learning
 
 $searchForm.on("submit", async function (evt) {
   evt.preventDefault();
   await searchForShowAndDisplay();
 });
 
-/** when button for episodes is clicked, invoke function to grab and display the 
+/** when button for episodes is clicked, invoke function to grab and display the
  * series episodes' information
  */
-$showsList.on('click', 'button', grabAndDisplayEpisodeInfo)
+$showsList.on("click", "button", grabAndDisplayEpisodeInfo);
 
 /** Checks if episodes button for the series has already been clicked
  * If has not been clicked, get the episodes' information and display the episode info.
- * After clicked, assign class that it has been clicked already. 
+ * After clicked, assign class that it has been clicked already.
  */
 async function grabAndDisplayEpisodeInfo(e) {
-  const showIDData = $(e.target)
-    .closest('.Show')
-    .data('show-id');
-  
+  const showIDData = $(e.target).closest(".Show").data("show-id");
+
   let basicEpisodesInfo = await getEpisodesOfShow(showIDData);
 
   populateEpisodes(basicEpisodesInfo);
@@ -111,15 +118,15 @@ async function grabAndDisplayEpisodeInfo(e) {
  */
 
 async function getEpisodesOfShow(showID) {
-  let showEpisodes = await axios.get(SHOW_EPISODES_URL + showID + '/episodes');
+  let showEpisodes = await axios.get(SHOW_EPISODES_URL + showID + "/episodes");
 
-  return showEpisodes.data.map(basicEpisodeInfo => {
+  return showEpisodes.data.map((basicEpisodeInfo) => {
     return {
-      id: basicEpisodeInfo.id, 
+      id: basicEpisodeInfo.id,
       name: basicEpisodeInfo.name,
-      season: basicEpisodeInfo.season, 
-      number: basicEpisodeInfo.number
-    }
+      season: basicEpisodeInfo.season,
+      number: basicEpisodeInfo.number,
+    };
   });
 }
 
@@ -128,12 +135,11 @@ async function getEpisodesOfShow(showID) {
  * Input: episodes - Array of objects [{id, name, season, number}]
  */
 function populateEpisodes(episodesOfShows) {
-  $('#episodesList').empty();
+  $("#episodesList").empty();
   $episodesArea.show();
   for (let episode of episodesOfShows) {
-      const $episodeInfo = $('<li>')
-        .html(`${episode.name} (Season
+    const $episodeInfo = $("<li>").html(`${episode.name} (Season
         ${episode.season}, Number ${episode.number}, ID ${episode.id})`);
-      $('#episodesList').append($episodeInfo);
+    $("#episodesList").append($episodeInfo);
   }
 }
