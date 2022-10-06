@@ -137,6 +137,3 @@ function populateEpisodes(episodesOfShows) {
       $('#episodesList').append($episodeInfo);
   }
 }
-
-
-
