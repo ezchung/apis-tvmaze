@@ -13,7 +13,7 @@ const MISSING_IMG_PLACEHOLDER = "https://tinyurl.com/tv-missing";
  *    Each show object should contain exactly: {id, name, summary, image}
  *    (if no image URL given by API, put in a default image URL)
  */
-//let request;
+
 async function getShowsByTerm(showTerm) {
   // ADD: Remove placeholder & make request to TVMaze search shows API.
   let request = await axios.get(MOVIE_URL,{params: {"q" : showTerm}});
@@ -28,16 +28,16 @@ async function getShowsByTerm(showTerm) {
    Input: show - Array of objects
    Return: Array of objects
    */
-   function getShowData(show) {
-    let {id, name, summary, image: showImg} = show.show;
-    //console.log(image);
-    if(showImg === null){
-      //console.log("image is null");
-      showImg = {original : MISSING_IMG_PLACEHOLDER};
-    }
-    const {original:image} = showImg;
-    return {id, name, summary, image};
+function getShowData(show) {
+  let {id, name, summary, image: showImg} = show.show;
+
+  if(showImg === null){
+    //console.log("image is null");
+    showImg = {original : MISSING_IMG_PLACEHOLDER};
   }
+  const {original:image} = showImg;
+  return {id, name, summary, image};
+}
 
 /** Given list of shows, create markup for each and to DOM */
 
@@ -47,34 +47,25 @@ function populateShows(shows) {
   for (let show of shows) {
     const $show = $(
         `<div data-show-id="${show.id}" class="Show col-md-12 col-lg-6 mb-4">
-         <div class="media">
-           <img
-              src="${show.image}"
-              alt="${show.name}"
-              class="w-25 me-3">
-           <div class="media-body">
-             <h5 class="text-primary">${show.name}</h5>
-             <div><small>${show.summary}</small></div>
-             <button class="btn btn-outline-light btn-sm Show-getEpisodes">
-               Episodes
-             </button>
-           </div>
-         </div>
-       </div>
-      `);
+          <div class="media">
+            <img
+                src="${show.image}"
+                alt="${show.name}"
+                class="w-25 me-3">
+            <div class="media-body">
+              <h5 class="text-primary">${show.name}</h5>
+              <div><small>${show.summary}</small></div>
+              <button class="btn btn-outline-light btn-sm Show-getEpisodes">
+                Episodes
+              </button>
+            </div>
+          </div>
+       </div>`
+      );
 
     $showsList.append($show);
   }
-
-    //  <img
-    //     src="http://static.tvmaze.com/uploads/images/medium_portrait/160/401704.jpg"
-    //     alt="Bletchly Circle San Francisco"
-    //     class="w-25 me-3">
-    //  <div class="media-body">
-    //    <h5 class="text-primary">${show.name}</h5>
-    //    <div><small>${show.summary}</small></div>
 }
-
 
 /** Handle search form submission: get shows from API and display.
  *    Hide episodes area (that only gets shown if they ask for episodes)
@@ -83,30 +74,36 @@ function populateShows(shows) {
 async function searchForShowAndDisplay() {
   const term = $("#searchForm-term").val();
   const shows = await getShowsByTerm(term);
-  const showIDs = shows.map(el => el.id);
-  console.log(showIDs);
-  const episodes = await Promise.all(showIDs.map(getEpisodesOfShow));
-  console.log('episodes', episodes);
-  // $episodesArea.hide();
+
+  $episodesArea.hide();
   populateShows(shows);
-  populateEpisodes(episodes);
 }
+
+/** Listen for submit action and invoke searchForShowAndDisplay function */
 
 $searchForm.on("submit", async function (evt) {
   evt.preventDefault();
   await searchForShowAndDisplay();
 });
 
+/** when button for episodes is clicked, invoke function to grab and display the 
+ * series episodes' information
+ */
 $showsList.on('click', 'button', grabAndDisplayEpisodeInfo)
 
-/**
- *
+/** Checks if episodes button for the series has already been clicked
+ * If has not been clicked, get the episodes' information and display the episode info.
+ * After clicked, assign class that it has been clicked already. 
  */
-function grabAndDisplayEpisodeInfo(e) {
+async function grabAndDisplayEpisodeInfo(e) {
   const showIDData = $(e.target)
-    .closest('.Show col-md-12 col-lg-6 mb-4');
-    // .data('data-show-id');
-  console.log('showIDData', showIDData);
+    .closest('.Show')
+    .data('show-id');
+  
+  let basicEpisodesInfo = await getEpisodesOfShow(showIDData);
+
+  populateEpisodes(basicEpisodesInfo);
+  $(e.target).toggleClass("clicked");
 }
 
 /** Given a show ID, get from API and return (promise) array of episodes:
@@ -115,13 +112,15 @@ function grabAndDisplayEpisodeInfo(e) {
 
 async function getEpisodesOfShow(showID) {
   let showEpisodes = await axios.get(SHOW_EPISODES_URL + showID + '/episodes');
-  console.log('showEpisodes', showEpisodes);
-  const showEpisodesInfo = showEpisodes.data.map(basicEpisodeInfo => {
-    return {id: basicEpisodeInfo.id, name: basicEpisodeInfo.name,
-      season: basicEpisodeInfo.season, number: basicEpisodeInfo.number}
+
+  return showEpisodes.data.map(basicEpisodeInfo => {
+    return {
+      id: basicEpisodeInfo.id, 
+      name: basicEpisodeInfo.name,
+      season: basicEpisodeInfo.season, 
+      number: basicEpisodeInfo.number
+    }
   });
-  console.log('showEpisodesInfo', showEpisodesInfo);
-  return showEpisodesInfo;
 }
 
 /**
@@ -129,12 +128,13 @@ async function getEpisodesOfShow(showID) {
  * Input: episodes - Array of objects [{id, name, season, number}]
  */
 function populateEpisodes(episodesOfShows) {
-  for (let episodes of episodesOfShows) {
-    for (let episode of episodes) {
-      const $episodeInfo = $('<li>').html(`${episode.name} (Season
+  $('#episodesList').empty();
+  $episodesArea.show();
+  for (let episode of episodesOfShows) {
+      const $episodeInfo = $('<li>')
+        .html(`${episode.name} (Season
         ${episode.season}, Number ${episode.number}, ID ${episode.id})`);
       $('#episodesList').append($episodeInfo);
-    }
   }
 }
 
